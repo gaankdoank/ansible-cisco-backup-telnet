@@ -1,0 +1,34 @@
+---
+- name: backup running-config script for cisco devices (by wahyu)
+  hosts: metro
+#  hosts: localhost
+  gather_facts: false
+  connection: local
+  tasks:
+   - name: timestamp init
+     shell: "date +%Y-%m-%d"
+     register: tstamp
+   - name: login and show run
+     telnet:
+      user: "{{ username }}"
+      password: "{{ password }}"
+      login_prompt: "Username: "
+      prompts:
+      - '[>|#]'
+      command:
+      - terminal length 0
+      - show run
+     register: configrun
+   - name: download config to file
+     copy:
+      content: "{{ configrun }}"
+      dest: "/etc/ansible/playbook/backup/{{ tstamp.stdout }}_{{ inventory_hostname }}.txt"
+   - name: remove unused char
+     command: /bin/sed -i 's!\\r\\n!\n!g' /etc/ansible/playbook/backup/{{ tstamp.stdout }}_{{ inventory_hostname }}.txt
+   - name: remove unused header and footer
+     command: /bin/sed -i '1,2d;$d' /etc/ansible/playbook/backup/{{ tstamp.stdout }}_{{ inventory_hostname }}.txt
+   - name: get hostname from file config
+     shell: "/bin/cat /etc/ansible/playbook/backup/{{ tstamp.stdout }}_{{ inventory_hostname }}.txt | grep hostname | awk -F' ' '{print $2}'"
+     register: get_hostname
+   - name: rename file config
+     shell: "/bin/mv /etc/ansible/playbook/backup/{{ tstamp.stdout }}_{{ inventory_hostname }}.txt /etc/ansible/playbook/backup/{{ tstamp.stdout }}_{{ get_hostname.stdout }}.txt"
