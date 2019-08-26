@@ -1,6 +1,6 @@
 ---
 - name: backup running-config script for cisco devices (by wahyu)
-  hosts: metro
+  hosts: vcisco
 #  hosts: localhost
   gather_facts: false
   connection: local
